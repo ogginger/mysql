@@ -1,0 +1,4 @@
+#!/bin/bash
+
+./rm_mysql
+./run_mysql
