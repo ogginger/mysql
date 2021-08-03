@@ -1,0 +1,19 @@
+#!/bin/bash
+if [ $# -gt 0 ]
+then
+    docker stop mysqld
+    docker rm mysqld
+    docker network rm mysql
+    docker network create mysql
+    sudo rm -r var/lib/mysql
+    sudo rm -r etc/mysql
+    mkdir -p var/lib/mysql
+    mkdir -p etc/mysql
+    touch etc/mysql/passwd
+    echo $1 > etc/mysql/passwd
+    sudo chmod 600 etc/mysql/passwd
+    docker run --name mysqld --network mysql -v $(pwd)/var/lib/mysql:/var/lib/mysql -e MYSQL_ROOT_PASSWORD=$1 -d mysql
+else
+    echo "Please provide a password."
+fi
+
