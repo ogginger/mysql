@@ -37,10 +37,10 @@ then
         docker run --name mysqld --network mysql -v $(pwd)/var/lib/mysql:/var/lib/mysql -e MYSQL_ROOT_PASSWORD=$1 -d mysql
     elif [ -f "$PASSWDFILE" ]
     then
-        echo "A passwd file already exists."
+        echo "$(pwd)/etc/mysql/passwd already exists."
     elif [ -d "$STORAGEPATH" ] && [ "$(find "$STORAGEPATH" -mindepth 1 -print -quit 2>/dev/null)" ]
     then
-        echo "The storage path already contains data."
+        echo "$(pwd)/var/lib/mysql already contains data."
     else
         echo "Creating new mysqld."
         docker stop mysqld
