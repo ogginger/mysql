@@ -1,6 +1,76 @@
 #!/bin/bash
-docker stop mysqld
-docker rm mysqld
-docker network rm mysql
-docker network create mysql
-docker run --name mysqld --network mysql -v $(pwd)/var/lib/mysql:/var/lib/mysql -v $(pwd)/etc/mysql/passwd:/home/passwd -e MYSQL_ROOT_PASSWORD_FILE=/home/passwd -d mysql
+PASSWDFILE=$(pwd)/etc/mysql/passwd
+STORAGEPATH=$(pwd)/var/lib/mysql
+if [ $# -gt 0 ]
+then
+    FORCE=false
+    while getopts ":f" opt; do
+        case ${opt} in
+        #if the force option is given.
+        f ) 
+            FORCE=true
+            ;;
+        \? ) 
+            echo "-$OPTARG is not a recognized flag."
+            ;;
+        esac
+    done
+    shift $((OPTIND -1))
+    #Check if a build already exists.
+    if [ $# -eq 0 ]
+    then
+        echo "Please provide a password."
+    elif [ $FORCE = true ]
+    then
+        echo "Forcing a new mysqld."
+        docker stop mysqld
+        docker rm mysqld
+        docker network rm mysql
+        docker network create mysql
+        sudo rm -r var/lib/mysql
+        sudo rm etc/mysql/passwd
+        mkdir -p var/lib/mysql
+        mkdir -p etc/mysql
+        touch etc/mysql/passwd
+        echo $1 > etc/mysql/passwd
+        sudo chmod 600 etc/mysql/passwd
+        docker run --name mysqld --network mysql -v $(pwd)/var/lib/mysql:/var/lib/mysql -e MYSQL_ROOT_PASSWORD=$1 -d mysql
+    elif [ -f "$PASSWDFILE" ]
+    then
+        echo "A passwd file already exists."
+    elif [ -d "$STORAGEPATH" ] && [ "$(find "$STORAGEPATH" -mindepth 1 -print -quit 2>/dev/null)" ]
+    then
+        echo "The storage path already contains data."
+    else
+        echo "Creating new mysqld."
+        docker stop mysqld
+        docker rm mysqld
+        docker network rm mysql
+        docker network create mysql
+        mkdir -p var/lib/mysql
+        mkdir -p etc/mysql
+        touch etc/mysql/passwd
+        echo $1 > etc/mysql/passwd
+        sudo chmod 600 etc/mysql/passwd
+        docker run --name mysqld --network mysql -v $(pwd)/var/lib/mysql:/var/lib/mysql -e MYSQL_ROOT_PASSWORD=$1 -d mysql
+    fi
+else
+    #else (no arguments are given)...
+    #Check if a build exists.
+    if [ ! -f "$PASSWDFILE" ]
+    then
+        echo "$(pwd)/etc/mysql/passwd does not exist."
+    elif [ ! "$(find "$STORAGEPATH" -mindepth 1 -print -quit 2>/dev/null)" ]
+    then
+        echo "$(pwd)/var/lib/mysql does not contain data."
+    else
+        echo "Deploying mysqld."
+        docker stop mysqld
+        docker rm mysqld
+        docker network rm mysql
+        docker network create mysql
+        docker run --name mysqld --network mysql -v $(pwd)/var/lib/mysql:/var/lib/mysql -v $(pwd)/etc/mysql/passwd:/home/passwd -e MYSQL_ROOT_PASSWORD_FILE=/home/passwd -d mysql
+    fi
+fi
+
+    
